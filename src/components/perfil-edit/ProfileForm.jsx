@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../contexts/useAuth";
+import SelectForm from "../forms/SelectForm";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -9,12 +10,18 @@ function ProfileForm() {
   const { user, saveUser } = useAuth();
   const [userName, setUserName] = useState("");
   const [userAnoIngresso, setUserAnoIngresso] = useState("");
-  const [userEixoId, setUserEixoId] = useState("");
   // const [userInteresses, setSelectedInteresses] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const [userEixoId, setUserEixoId] = useState("");
   const [eixos, setEixos] = useState([]);
   const [isLoadingEixos, setIsLoadingEixos] = useState(true);
+
+  const [userPoloId, setUserPoloId] = useState("");
+  const [polos, setPolos] = useState([]);
+  const [isLoadingPolos, setIsLoadingPolos] = useState(true);
+
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
@@ -71,6 +78,28 @@ function ProfileForm() {
     fetchEixos();
   }, []);
 
+  useEffect(() => {
+    const fetchPolos = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/perfil/polos`);
+
+        if (!response.ok) {
+          throw new Error(
+            `Erro ao buscar polos: ${response.status} ${response.statusText}`,
+          );
+        }
+        const data = await response.json();
+        setPolos(data);
+      } catch (err) {
+        setError(`Erro ao carregar polos: ${err.message}`);
+      } finally {
+        setIsLoadingPolos(false);
+      }
+    };
+
+    fetchPolos();
+  }, []);
+
   const handleNameChange = (event) => {
     setUserName(event.target.value);
   };
@@ -109,6 +138,7 @@ function ProfileForm() {
           nome: userName,
           anoIngresso: userAnoIngresso,
           eixoId: userEixoId,
+          poloId: userPoloId,
           // interesses: userInteresses,
         }),
       });
@@ -132,7 +162,7 @@ function ProfileForm() {
     return <div>Carregando...</div>;
   }
 
-  if (isLoadingUser || isLoadingEixos) {
+  if (isLoadingUser || isLoadingEixos || isLoadingPolos) {
     return <div>Carregando dados do perfil...</div>;
   }
 
@@ -156,26 +186,24 @@ function ProfileForm() {
           placeholder={user.nome || "Digite seu nome"}
           required
         />
-        <label>
-          <h2 className="my-5 text-2xl font-bold">Eixo:</h2>
-        </label>
-        <select
-          className="bg-tertiary rounded-2xl h-10 pl-4 pb-1 border-1 w-full"
-          value={userEixoId}
-          onChange={(e) => setUserEixoId(e.target.value)}
-          required
-          disabled={isLoadingEixos}
-        >
-          <option value="">
-            {user.eixo ? user.eixo.nome : "Selecione um eixo"}
-          </option>
-          {eixos.map((eixo) => (
-            <option key={eixo.id} value={eixo.id}>
-              {eixo.nome}
-            </option>
-          ))}
-        </select>
-        {isLoadingEixos && <p className="text-gray-500">Carregando eixos...</p>}
+        <SelectForm
+          title="Eixo"
+          id={userEixoId}
+          isLoading={isLoadingEixos}
+          options={user.eixo}
+          type={eixos}
+          selectMsg="Selecione um eixo"
+          loadingMsg="Carregando eixos..."
+        />
+        <SelectForm
+          title="Polo"
+          id={userPoloId}
+          isLoading={isLoadingPolos}
+          options={user.polo}
+          type={polos}
+          selectMsg="Selecione um polo"
+          loadingMsg="Carregando polos..."
+        />
         <label>
           <h2 className="my-5 text-2xl font-bold">Ano de ingresso:</h2>
         </label>
